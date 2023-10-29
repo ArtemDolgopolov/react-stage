@@ -1,11 +1,13 @@
-import React, { Component } from 'react';
+import { Component } from 'react';
 import Search from './components/Search';
 import SearchResults from './components/SearchResults';
 import { SearchResult } from './interfaces/ISearchResults';
+import ErrorBoundary from './components/ErrorBoundary';
 
 interface AppState {
   searchTerm: string;
   results: SearchResult[];
+  shouldThrowError: boolean;
 }
 
 class App extends Component<object, AppState> {
@@ -14,14 +16,8 @@ class App extends Component<object, AppState> {
     this.state = {
       searchTerm: '',
       results: [] as SearchResult[],
+      shouldThrowError: false,
     };
-  }
-
-  componentDidMount() {
-    const savedSearchTerm = localStorage.getItem('searchTerm');
-    if (savedSearchTerm) {
-      this.setState({ searchTerm: savedSearchTerm });
-    }
   }
 
   handleSearch = (searchTerm: string) => {
@@ -30,12 +26,18 @@ class App extends Component<object, AppState> {
   };
 
   render() {
-    const { searchTerm, results } = this.state;
+    const { searchTerm, results, shouldThrowError } = this.state;
 
     return (
-      <div className="app">
+      <div className="page-container">
         <Search onSearch={this.handleSearch} />
-        <SearchResults searchTerm={searchTerm} results={results} />
+        {shouldThrowError ? (
+          <ErrorBoundary>
+            <SearchResults searchTerm={searchTerm} results={results} />
+          </ErrorBoundary>
+        ) : (
+          <SearchResults searchTerm={searchTerm} results={results} />
+        )}
       </div>
     );
   }

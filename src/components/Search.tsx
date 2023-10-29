@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { SearchResult } from '../interfaces/ISearchResults';
+import '../App.css';
 
 interface SearchProps {
-  onSearch: (searchTerm: string, results: SearchResult[]) => void;
+  onSearch: (searchTerm: string) => void;
 }
 
 interface SearchState {
@@ -21,28 +21,21 @@ class Search extends Component<SearchProps, SearchState> {
     this.setState({ searchTerm: event.target.value });
   };
 
-  handleSearchSubmit = async () => {
+  handleSearchSubmit = () => {
     const { searchTerm } = this.state;
     const { onSearch } = this.props;
-    try {
-      const response = await fetch(
-        `https://swapi.dev/api/people/?search=${searchTerm}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const { results } = data.results;
-        onSearch(searchTerm, results);
-        localStorage.setItem('searchTerm', searchTerm);
-      }
-    } catch (error) {
-      // console.error('Error:', error);
-    }
+    onSearch(searchTerm);
+    localStorage.setItem('searchTerm', searchTerm);
+  };
+
+  handleThrowError = () => {
+    throw new Error('This is a test error');
   };
 
   render() {
     const { searchTerm } = this.state;
     return (
-      <div className="search">
+      <header className="search">
         <input
           type="text"
           value={searchTerm}
@@ -52,7 +45,10 @@ class Search extends Component<SearchProps, SearchState> {
         <button type="button" onClick={this.handleSearchSubmit}>
           Search
         </button>
-      </div>
+        <button type="button" onClick={this.handleThrowError}>
+          Throw Error
+        </button>
+      </header>
     );
   }
 }

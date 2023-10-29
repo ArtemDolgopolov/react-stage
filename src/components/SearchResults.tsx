@@ -1,5 +1,7 @@
-import React, { Component } from 'react';
+import { Component } from 'react';
 import { SearchResult } from '../interfaces/ISearchResults';
+import ErrorBoundary from './ErrorBoundary';
+import '../App.css';
 
 interface ResultItem {
   name: string;
@@ -8,13 +10,14 @@ interface ResultItem {
 
 class SearchResults extends Component<
   { searchTerm: string; results: SearchResult[] },
-  { results: SearchResult[]; isLoading: boolean }
+  { results: SearchResult[]; isLoading: boolean; shouldThrowError: boolean }
 > {
   constructor(props: { searchTerm: string; results: SearchResult[] }) {
     super(props);
     this.state = {
       results: props.results || [],
       isLoading: false,
+      shouldThrowError: false,
     };
   }
 
@@ -40,6 +43,7 @@ class SearchResults extends Component<
     fetch(apiUrl)
       .then((response) => {
         if (!response.ok) {
+          this.setState({ shouldThrowError: true });
           throw new Error('Network response was not ok');
         }
         return response.json();
@@ -53,29 +57,33 @@ class SearchResults extends Component<
         });
 
         this.setState({ results, isLoading: false });
-
         localStorage.setItem('searchResults', JSON.stringify(results));
       })
       .catch(() => {
-        // console.error('Error fetching data:', error);
+        this.setState({ shouldThrowError: true });
         this.setState({ isLoading: false });
       });
   }
 
   render() {
-    const { results, isLoading } = this.state;
+    const { results, isLoading, shouldThrowError } = this.state;
+
     return (
       <div className="search-results">
-        {isLoading ? (
-          <div>Loading...</div>
-        ) : (
-          results.map((result) => (
-            <div key={result.name} className="result">
-              <p>Name: {result.name}</p>
-              <p>Date of birth: {result.birth_year}</p>
-            </div>
-          ))
-        )}
+        <ErrorBoundary>
+          {shouldThrowError ? (
+            <div>Unknown error on server. Reload the page</div>
+          ) : isLoading ? (
+            <div>Loading...</div>
+          ) : (
+            results.map((result) => (
+              <div key={result.name} className="result">
+                <p>Name: {result.name}</p>
+                <p>Date of birth: {result.birth_year}</p>
+              </div>
+            ))
+          )}
+        </ErrorBoundary>
       </div>
     );
   }
