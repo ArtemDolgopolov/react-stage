@@ -1,8 +1,7 @@
-import { Component } from 'react';
+import React, { useState } from 'react';
 import Search from './components/Search';
 import SearchResults from './components/SearchResults';
 import { SearchResult } from './interfaces/ISearchResults';
-import ErrorBoundary from './components/ErrorBoundary';
 
 interface AppState {
   searchTerm: string;
@@ -10,37 +9,33 @@ interface AppState {
   shouldThrowError: boolean;
 }
 
-class App extends Component<object, AppState> {
-  constructor(props: object) {
-    super(props);
-    this.state = {
-      searchTerm: '',
-      results: [] as SearchResult[],
-      shouldThrowError: false,
-    };
-  }
+const App: React.FC = () => {
+  const [state, setState] = useState<AppState>({
+    searchTerm: '',
+    results: [] as SearchResult[],
+    shouldThrowError: false,
+  });
 
-  handleSearch = (searchTerm: string) => {
-    this.setState({ searchTerm });
+  const handleSearch = (searchTerm: string) => {
+    setState((prevState) => ({
+      ...prevState,
+      searchTerm,
+    }));
     localStorage.setItem('searchTerm', searchTerm);
   };
 
-  render() {
-    const { searchTerm, results, shouldThrowError } = this.state;
+  const { searchTerm, results, shouldThrowError } = state;
 
-    return (
-      <div className="page-container">
-        <Search onSearch={this.handleSearch} />
-        {shouldThrowError ? (
-          <ErrorBoundary>
-            <SearchResults searchTerm={searchTerm} results={results} />
-          </ErrorBoundary>
-        ) : (
-          <SearchResults searchTerm={searchTerm} results={results} />
-        )}
-      </div>
-    );
-  }
-}
+  return (
+    <div className="page-container">
+      <Search onSearch={handleSearch} />
+      {shouldThrowError ? (
+        <p>Oops, something is wrong. Reload the page.</p>
+      ) : (
+        <SearchResults searchTerm={searchTerm} results={results} />
+      )}
+    </div>
+  );
+};
 
 export default App;

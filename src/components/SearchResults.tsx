@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SearchResult } from '../interfaces/ISearchResults';
 import ErrorBoundary from './ErrorBoundary';
 import '../App.css';
@@ -8,85 +8,73 @@ interface ResultItem {
   birth_year: string;
 }
 
-class SearchResults extends Component<
-  { searchTerm: string; results: SearchResult[] },
-  { results: SearchResult[]; isLoading: boolean; shouldThrowError: boolean }
-> {
-  constructor(props: { searchTerm: string; results: SearchResult[] }) {
-    super(props);
-    this.state = {
-      results: props.results || [],
-      isLoading: false,
-      shouldThrowError: false,
-    };
-  }
+const SearchResults: React.FC<{
+  searchTerm: string;
+  results: SearchResult[];
+}> = ({ searchTerm, results: initialResults }) => {
+  const [results, setResults] = useState(initialResults || []);
+  const [isLoading, setIsLoading] = useState(false);
+  const [shouldThrowError, setShouldThrowError] = useState(false);
 
-  componentDidMount() {
+  useEffect(() => {
     const savedResults = localStorage.getItem('searchResults');
     if (savedResults) {
-      this.setState({ results: JSON.parse(savedResults) });
+      setResults(JSON.parse(savedResults));
     }
-  }
+  }, []);
 
-  componentDidUpdate(prevProps: { searchTerm: string }) {
-    const { searchTerm } = this.props;
-    if (searchTerm !== prevProps.searchTerm) {
-      this.fetchData();
-    }
-  }
+  useEffect(() => {
+    const fetchData = () => {
+      const apiUrl = `https://swapi.dev/api/people/?search=${searchTerm}`;
+      setIsLoading(true);
 
-  fetchData() {
-    const { searchTerm } = this.props;
-    const apiUrl = `https://swapi.dev/api/people/?search=${searchTerm}`;
-    this.setState({ isLoading: true });
-
-    fetch(apiUrl)
-      .then((response) => {
-        if (!response.ok) {
-          this.setState({ shouldThrowError: true });
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        const results = data.results.map((item: ResultItem) => {
-          return {
+      fetch(apiUrl)
+        .then((response) => {
+          if (!response.ok) {
+            setShouldThrowError(true);
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const newResults = data.results.map((item: ResultItem) => ({
             name: item.name,
             birth_year: item.birth_year,
-          };
+          }));
+
+          setResults(newResults);
+          setIsLoading(false);
+          localStorage.setItem('searchResults', JSON.stringify(newResults));
+        })
+        .catch(() => {
+          setShouldThrowError(true);
+          setIsLoading(false);
         });
+    };
 
-        this.setState({ results, isLoading: false });
-        localStorage.setItem('searchResults', JSON.stringify(results));
-      })
-      .catch(() => {
-        this.setState({ shouldThrowError: true });
-        this.setState({ isLoading: false });
-      });
-  }
+    if (searchTerm !== '') {
+      fetchData();
+    }
+  }, [searchTerm]);
 
-  render() {
-    const { results, isLoading, shouldThrowError } = this.state;
-
-    return (
-      <div className="search-results">
-        <ErrorBoundary>
-          {shouldThrowError ? (
-            <div>Unknown error on server. Reload the page</div>
-          ) : isLoading ? (
-            <div>Loading...</div>
-          ) : (
-            results.map((result) => (
-              <div key={result.name} className="result">
-                <p>Name: {result.name}</p>
-                <p>Date of birth: {result.birth_year}</p>
-              </div>
-            ))
-          )}
-        </ErrorBoundary>
-      </div>
-    );
-  }
-}
+  return (
+    <div className="search-results">
+      <ErrorBoundary>
+        {shouldThrowError ? (
+          <div>Unknown error on the server. Reload the page</div>
+        ) : isLoading ? (
+          <div>Loading...</div>
+        ) : (
+          results.map((result) => (
+            <div key={result.name} className="result">
+              <p>Name: {result.name}</p>
+              <p>Date of birth: {result.birth_year}</p>
+            </div>
+          ))
+        )}
+      </ErrorBoundary>
+    </div>
+  );
+};
 
 export default SearchResults;
