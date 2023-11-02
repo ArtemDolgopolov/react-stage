@@ -1,19 +1,13 @@
 import React, { useState } from 'react';
 import Search from './components/Search';
 import SearchResults from './components/SearchResults';
-import { SearchResult } from './interfaces/ISearchResults';
-
-interface AppState {
-  searchTerm: string;
-  results: SearchResult[];
-  shouldThrowError: boolean;
-}
+import { AppState, SearchResult } from './interfaces/ISearchResults';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>({
     searchTerm: '',
-    results: [] as SearchResult[],
     shouldThrowError: false,
+    results: [] as SearchResult[],
   });
 
   const handleSearch = (searchTerm: string) => {
@@ -24,7 +18,7 @@ const App: React.FC = () => {
     localStorage.setItem('searchTerm', searchTerm);
   };
 
-  const { searchTerm, results, shouldThrowError } = state;
+  const { searchTerm, shouldThrowError } = state;
 
   return (
     <div className="page-container">
@@ -32,7 +26,7 @@ const App: React.FC = () => {
       {shouldThrowError ? (
         <p>Oops, something is wrong. Reload the page.</p>
       ) : (
-        <SearchResults searchTerm={searchTerm} results={results} />
+        <SearchResults searchTerm={searchTerm} />
       )}
     </div>
   );

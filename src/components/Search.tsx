@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
+import { SearchProps } from '../interfaces/ISearchResults';
 import '../App.css';
-
-interface SearchProps {
-  onSearch: (searchTerm: string) => void;
-}
 
 const Search: React.FC<SearchProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState('');
