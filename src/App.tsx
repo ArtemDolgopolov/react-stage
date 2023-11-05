@@ -1,33 +1,25 @@
 import React, { useState } from 'react';
 import Search from './components/Search';
 import SearchResults from './components/SearchResults';
-import { AppState, SearchResult } from './interfaces/ISearchResults';
+import { useLocation } from 'react-router-dom';
 
 const App: React.FC = () => {
-  const [state, setState] = useState<AppState>({
-    searchTerm: '',
-    shouldThrowError: false,
-    results: [] as SearchResult[],
-  });
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
 
-  const handleSearch = (searchTerm: string) => {
-    setState((prevState) => ({
-      ...prevState,
-      searchTerm,
-    }));
-    localStorage.setItem('searchTerm', searchTerm);
+  // Извлекаем значение searchTerm из параметров адресной строки
+  const searchTermFromURL = queryParams.get('searchTerm');
+  const [searchTerm, setSearchTerm] = useState(searchTermFromURL || '');
+
+  const handleSearch = (newSearchTerm: string) => {
+    // Обновляем состояние searchTerm, но не обновляем адресную строку
+    setSearchTerm(newSearchTerm);
   };
-
-  const { searchTerm, shouldThrowError } = state;
 
   return (
     <div className="page-container">
       <Search onSearch={handleSearch} />
-      {shouldThrowError ? (
-        <p>Oops, something is wrong. Reload the page.</p>
-      ) : (
-        <SearchResults searchTerm={searchTerm} />
-      )}
+      <SearchResults searchTerm={searchTerm} />
     </div>
   );
 };

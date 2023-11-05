@@ -1,7 +1,10 @@
 import { ResultItem, SearchResult } from '../interfaces/ISearchResults';
 
-export async function fetchData(searchTerm: string): Promise<SearchResult[]> {
-  const apiUrl = `https://swapi.dev/api/people/?search=${searchTerm}`;
+export async function fetchData(
+  searchTerm: string,
+  page: number
+): Promise<SearchResult[]> {
+  const apiUrl = `https://swapi.dev/api/people/?search=${searchTerm}&page=${page}`;
   const response = await fetch(apiUrl);
 
   if (!response.ok) {
@@ -9,11 +12,10 @@ export async function fetchData(searchTerm: string): Promise<SearchResult[]> {
   }
 
   const data = await response.json();
-  const newResults: SearchResult[] = data.results.map((item: ResultItem) => ({
+
+  return data.results.map((item: ResultItem) => ({
     name: item.name,
     birth_year: item.birth_year,
     isLoading: false,
   }));
-
-  return newResults;
 }

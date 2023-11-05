@@ -37,3 +37,8 @@ input {
   width: 300px;
   margin: 20px;
 }
+
+.modal-open {
+ overflow: hidden;
+ display: flex;
+}

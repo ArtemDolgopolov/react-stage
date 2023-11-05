@@ -10,12 +10,10 @@ const Search: React.FC<SearchProps> = ({ onSearch }) => {
   };
 
   const handleSearchSubmit = () => {
-    onSearch(searchTerm);
-    localStorage.setItem('searchTerm', searchTerm);
-  };
-
-  const handleThrowError = () => {
-    throw new Error('This is a test error');
+    if (searchTerm.trim() !== '') {
+      onSearch(searchTerm.trim()); // Call onSearch with a trimmed searchTerm
+      localStorage.setItem('searchTerm', searchTerm.trim());
+    }
   };
 
   return (
@@ -28,9 +26,6 @@ const Search: React.FC<SearchProps> = ({ onSearch }) => {
       />
       <button type="button" onClick={handleSearchSubmit}>
         Search persons
-      </button>
-      <button type="button" onClick={handleThrowError}>
-        Throw Error
       </button>
     </header>
   );
