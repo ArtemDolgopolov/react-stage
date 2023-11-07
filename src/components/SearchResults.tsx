@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { SearchResult } from '../interfaces/ISearchResults';
 import ErrorBoundary from './ErrorBoundary';
 import { fetchData } from './Api';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Card from './Card';
 
 import '../App.css';
 import Pagination from './Pagination';
@@ -88,17 +89,12 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
         ) : results.length === 0 ? (
           <p>No results found</p>
         ) : (
-          results.map((result, index) => (
-            <Link
+          results.map((result) => (
+            <Card
               key={result.name}
-              to={`?page=${currentPage}&details=${index}`}
-              state={{ result }}
-            >
-              <div className="result">
-                <p>Name: {result.name}</p>
-                <p>Date of birth: {result.birth_year}</p>
-              </div>
-            </Link>
+              name={result.name}
+              birthYear={result.birth_year}
+            />
           ))
         )}
         <Pagination

@@ -11,7 +11,7 @@ const Search: React.FC<SearchProps> = ({ onSearch }) => {
 
   const handleSearchSubmit = () => {
     if (searchTerm.trim() !== '') {
-      onSearch(searchTerm.trim()); // Call onSearch with a trimmed searchTerm
+      onSearch(searchTerm.trim());
       localStorage.setItem('searchTerm', searchTerm.trim());
     }
   };
