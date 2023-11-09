@@ -7,15 +7,16 @@ import Card from './Card';
 
 import '../App.css';
 import Pagination from './Pagination';
+import { useAppState } from './AppStateContext';
 
 const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
+  const { results, setResults } = useAppState();
   const location = useLocation();
   const queryParams = useMemo(
     () => new URLSearchParams(location.search),
     [location.search]
   );
 
-  const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [shouldThrowError, setShouldThrowError] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,6 +55,9 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
 
         setResults(newResults);
         setCurrentPage(page);
+
+        // Сохраните результаты в localStorage
+        localStorage.setItem('searchResults', JSON.stringify(newResults));
       } catch (error) {
         setShouldThrowError(true);
       } finally {
@@ -69,7 +73,7 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
 
     const page = parseInt(queryParams.get('page') || '1', 10);
     fetchAndStoreData(page);
-  }, [queryParams, searchTerm, itemsPerPage]);
+  }, [queryParams, searchTerm, itemsPerPage, setResults]);
 
   const handlePageChange = (newPage: number) => {
     history(`?page=${newPage}&itemsPerPage=${itemsPerPage}`);
@@ -78,6 +82,14 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     history(`?page=1&itemsPerPage=${newItemsPerPage}`);
   };
+
+  useEffect(() => {
+    // Восстановите результаты поиска из localStorage при монтировании компонента
+    const savedSearchResults = localStorage.getItem('searchResults');
+    if (savedSearchResults) {
+      setResults(JSON.parse(savedSearchResults));
+    }
+  }, [setResults]);
 
   return (
     <div className="search-results">
