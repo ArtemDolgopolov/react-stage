@@ -8,6 +8,7 @@ import Card from './Card';
 import '../App.css';
 import Pagination from './Pagination';
 import { useAppState } from './AppStateContext';
+import DetailedCard from './DetailedCard';
 
 const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
   const { results, setResults } = useAppState();
@@ -21,6 +22,10 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
   const [shouldThrowError, setShouldThrowError] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(
+    null
+  );
+  const [detailedCardOpen, setDetailedCardOpen] = useState(false);
 
   const history = useNavigate();
 
@@ -56,7 +61,6 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
         setResults(newResults);
         setCurrentPage(page);
 
-        // Сохраните результаты в localStorage
         localStorage.setItem('searchResults', JSON.stringify(newResults));
       } catch (error) {
         setShouldThrowError(true);
@@ -83,8 +87,17 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
     history(`?page=1&itemsPerPage=${newItemsPerPage}`);
   };
 
+  const openDetailedCard = (result: SearchResult) => {
+    setSelectedResult(result);
+    setDetailedCardOpen(true);
+  };
+
+  const closeDetailedCard = () => {
+    setSelectedResult(null);
+    setDetailedCardOpen(false);
+  };
+
   useEffect(() => {
-    // Восстановите результаты поиска из localStorage при монтировании компонента
     const savedSearchResults = localStorage.getItem('searchResults');
     if (savedSearchResults) {
       setResults(JSON.parse(savedSearchResults));
@@ -102,11 +115,9 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
           <p>No results found</p>
         ) : (
           results.map((result) => (
-            <Card
-              key={result.name}
-              name={result.name}
-              birthYear={result.birth_year}
-            />
+            <div key={result.name} onClick={() => openDetailedCard(result)}>
+              <Card name={result.name} birthYear={result.birth_year} />
+            </div>
           ))
         )}
         <Pagination
@@ -117,6 +128,11 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
           onItemsPerPageChange={handleItemsPerPageChange}
         />
       </ErrorBoundary>
+      <DetailedCard
+        isOpen={detailedCardOpen}
+        onClose={closeDetailedCard}
+        result={selectedResult!}
+      />
     </div>
   );
 };

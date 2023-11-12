@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import App from './App';
+import NotFoundPage from './components/404Page';
 import './index.css';
 import { AppStateProvider } from './components/AppStateContext';
 
@@ -13,7 +14,10 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <Router>
       <AppStateProvider>
-        <App />
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
       </AppStateProvider>
     </Router>
   </React.StrictMode>
