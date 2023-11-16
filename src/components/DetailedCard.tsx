@@ -1,6 +1,8 @@
 import React from 'react';
 import Modal from 'react-modal';
 import { SearchResult } from '../interfaces/ISearchResults';
+import { setResults } from '../redux/appSlice';
+import { useDispatch } from 'react-redux';
 
 interface DetailedCardProps {
   isOpen: boolean;
@@ -13,14 +15,21 @@ const DetailedCard: React.FC<DetailedCardProps> = ({
   onClose,
   result,
 }) => {
+  const dispatch = useDispatch();
+
   if (!result) {
     return null;
   }
 
+  const closeDetailedCard = () => {
+    dispatch(setResults([]));
+    onClose();
+  };
+
   return (
     <Modal
       isOpen={isOpen}
-      onRequestClose={onClose}
+      onRequestClose={closeDetailedCard}
       contentLabel="Detailed Card Modal"
     >
       <div>
@@ -30,7 +39,7 @@ const DetailedCard: React.FC<DetailedCardProps> = ({
             <h2>Details for {result.name}</h2>
             <p>Name: {result.name}</p>
             <p>Date of birth: {result.birth_year}</p>
-            <button onClick={onClose}>Close</button>
+            <button onClick={closeDetailedCard}>Close</button>
           </>
         )}
       </div>

@@ -4,14 +4,18 @@ import ErrorBoundary from './ErrorBoundary';
 import { fetchData } from './Api';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Card from './Card';
+import { RootState } from '../redux/store';
 
 import '../App.css';
 import Pagination from './Pagination';
-import { useAppState } from './AppStateContext';
 import DetailedCard from './DetailedCard';
+import { useDispatch, useSelector } from 'react-redux';
+import { setResults } from '../redux/searchSlice';
 
 const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
-  const { results, setResults } = useAppState();
+  const dispatch = useDispatch(); // Add this line
+  const results = useSelector((state: RootState) => state.search.results); // Replace useAppState with useSelector
+
   const location = useLocation();
   const queryParams = useMemo(
     () => new URLSearchParams(location.search),
@@ -58,7 +62,7 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
           newResults = newResults.slice(0, itemsPerPage);
         }
 
-        setResults(newResults);
+        dispatch(setResults(newResults)); // Dispatch action to set results in Redux store
         setCurrentPage(page);
 
         localStorage.setItem('searchResults', JSON.stringify(newResults));
@@ -77,7 +81,7 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
 
     const page = parseInt(queryParams.get('page') || '1', 10);
     fetchAndStoreData(page);
-  }, [queryParams, searchTerm, itemsPerPage, setResults]);
+  }, [queryParams, searchTerm, itemsPerPage, dispatch]); // Add dispatch to the dependencies
 
   const handlePageChange = (newPage: number) => {
     history(`?page=${newPage}&itemsPerPage=${itemsPerPage}`);
@@ -100,9 +104,9 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
   useEffect(() => {
     const savedSearchResults = localStorage.getItem('searchResults');
     if (savedSearchResults) {
-      setResults(JSON.parse(savedSearchResults));
+      dispatch(setResults(JSON.parse(savedSearchResults))); // Dispatch action to set results in Redux store
     }
-  }, [setResults]);
+  }, [dispatch]); // Add dispatch to the dependencies
 
   return (
     <div className="search-results">
@@ -114,7 +118,7 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
         ) : results.length === 0 ? (
           <p>No results found</p>
         ) : (
-          results.map((result) => (
+          results.map((result: SearchResult) => (
             <div key={result.name} onClick={() => openDetailedCard(result)}>
               <Card name={result.name} birthYear={result.birth_year} />
             </div>
