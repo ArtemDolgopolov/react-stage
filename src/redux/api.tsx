@@ -11,6 +11,8 @@ export const api = createApi({
     >({
       query: ({ searchTerm, page }) =>
         `people/?search=${searchTerm}&page=${page}`,
+      transformResponse: (response: { results: SearchResult[] }) =>
+        response.results,
     }),
   }),
 });

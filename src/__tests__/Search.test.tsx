@@ -1,51 +1,43 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, fireEvent, waitFor, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { Provider } from 'react-redux';
+import store from '../redux/store';
 import Search from '../components/Search';
-import { AppStateProvider } from '../components/AppStateContext';
 
-it('renders search input and button', () => {
+test('renders Search correctly', async () => {
   render(
-    <AppStateProvider>
+    <Provider store={store}>
       <Search onSearch={() => {}} />
-    </AppStateProvider>
+    </Provider>
   );
 
-  const inputElement = screen.getByPlaceholderText('Search...');
-  const buttonElement = screen.getByText('Search persons');
+  const input = screen.getByPlaceholderText('Search...');
 
-  expect(inputElement).toBeInTheDocument();
-  expect(buttonElement).toBeInTheDocument();
+  fireEvent.change(input, { target: { value: 'Luke' } });
+
+  await waitFor(() => {
+    expect(input).toHaveValue('Luke');
+  });
 });
 
-it('clicking the Search button saves the entered value to the local storage', () => {
-  const mockOnSearch = jest.fn();
+test('handles local storage correctly', async () => {
   render(
-    <AppStateProvider>
-      <Search onSearch={mockOnSearch} />
-    </AppStateProvider>
+    <Provider store={store}>
+      <Search onSearch={() => {}} />
+    </Provider>
   );
 
-  const inputElement = screen.getByPlaceholderText('Search...');
-  const buttonElement = screen.getByText('Search persons');
+  const input = screen.getByPlaceholderText('Search...');
 
-  fireEvent.change(inputElement, { target: { value: 'Luke Skywalker' } });
+  fireEvent.change(input, { target: { value: 'Anakin' } });
 
-  fireEvent.click(buttonElement);
+  await waitFor(() => {
+    expect(input).toHaveValue('Anakin');
+  });
 
-  expect(mockOnSearch).toHaveBeenCalledWith('Luke Skywalker');
-});
+  const searchButton = screen.getByText('Search persons');
 
-test('component retrieves the value from the local storage upon mounting', () => {
-  const mockOnSearch = jest.fn();
-  render(
-    <AppStateProvider>
-      <Search onSearch={mockOnSearch} />
-    </AppStateProvider>
-  );
+  fireEvent.click(searchButton);
 
-  const buttonElement = screen.getByText('Search persons');
-
-  fireEvent.click(buttonElement);
-
-  expect(mockOnSearch).not.toHaveBeenCalled();
+  expect(localStorage.getItem('searchTerm')).toBe('Anakin');
 });

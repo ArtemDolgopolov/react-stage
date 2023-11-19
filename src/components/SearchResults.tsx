@@ -1,20 +1,32 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SearchResult } from '../interfaces/ISearchResults';
 import ErrorBoundary from './ErrorBoundary';
-import { fetchData } from './Api';
+import { useFetchDataQuery } from '../redux/api';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Card from './Card';
 import { RootState } from '../redux/store';
-
 import '../App.css';
 import Pagination from './Pagination';
 import DetailedCard from './DetailedCard';
 import { useDispatch, useSelector } from 'react-redux';
-import { setResults } from '../redux/searchSlice';
+import {
+  setResults,
+  setItemsPerPage,
+  setMainPageLoading,
+  setDetailsPageLoading,
+} from '../redux/searchSlice';
 
 const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
-  const dispatch = useDispatch(); // Add this line
-  const results = useSelector((state: RootState) => state.search.results); // Replace useAppState with useSelector
+  const dispatch = useDispatch();
+  const itemsPerPage = useSelector(
+    (state: RootState) => state.search.itemsPerPage
+  );
+  const mainPageLoading = useSelector(
+    (state: RootState) => state.search.mainPageLoading
+  );
+  const detailsPageLoading = useSelector(
+    (state: RootState) => state.search.detailsPageLoading
+  );
 
   const location = useLocation();
   const queryParams = useMemo(
@@ -22,10 +34,9 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
     [location.search]
   );
 
-  const [isLoading, setIsLoading] = useState(false);
   const [shouldThrowError, setShouldThrowError] = useState(false);
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(
     null
   );
@@ -33,43 +44,34 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
 
   const history = useNavigate();
 
+  const { data: results, isLoading } = useFetchDataQuery({
+    searchTerm,
+    page: currentPage,
+  });
+
   useEffect(() => {
-    if (!searchTerm) {
-      return;
-    }
-
     const fetchAndStoreData = async (page: number) => {
-      setIsLoading(true);
-      setShouldThrowError(false);
-
       try {
-        let newResults: SearchResult[] = [];
-
-        if (itemsPerPage === 20 && page === 1) {
-          const resultsPage1 = await fetchData(searchTerm, page);
-          const resultsPage2 = await fetchData(searchTerm, page + 1);
-          newResults = resultsPage1.concat(resultsPage2);
-        } else if (itemsPerPage === 30 && page === 1) {
-          const resultsPage1 = await fetchData(searchTerm, page);
-          const resultsPage2 = await fetchData(searchTerm, page + 1);
-          const resultsPage3 = await fetchData(searchTerm, page + 2);
-          newResults = resultsPage1.concat(resultsPage2, resultsPage3);
+        if (page === 1) {
+          dispatch(setMainPageLoading(true));
         } else {
-          newResults = await fetchData(searchTerm, page);
+          dispatch(setDetailsPageLoading(true));
         }
 
-        if (newResults.length < itemsPerPage && page !== 1) {
-          newResults = newResults.slice(0, itemsPerPage);
-        }
+        const newResults: SearchResult[] = [];
 
-        dispatch(setResults(newResults)); // Dispatch action to set results in Redux store
+        dispatch(setResults(newResults));
         setCurrentPage(page);
 
         localStorage.setItem('searchResults', JSON.stringify(newResults));
       } catch (error) {
         setShouldThrowError(true);
       } finally {
-        setIsLoading(false);
+        if (page === 1) {
+          dispatch(setMainPageLoading(false));
+        } else {
+          dispatch(setDetailsPageLoading(false));
+        }
       }
     };
 
@@ -77,18 +79,23 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
       queryParams.get('itemsPerPage') || '10',
       10
     );
-    setItemsPerPage(itemsPerPageFromURL);
+    dispatch(setItemsPerPage(itemsPerPageFromURL));
 
     const page = parseInt(queryParams.get('page') || '1', 10);
     fetchAndStoreData(page);
-  }, [queryParams, searchTerm, itemsPerPage, dispatch]); // Add dispatch to the dependencies
+  }, [queryParams, searchTerm, itemsPerPage, dispatch]);
 
   const handlePageChange = (newPage: number) => {
-    history(`?page=${newPage}&itemsPerPage=${itemsPerPage}`);
+    setShouldThrowError(false);
+    const currentItemsPerPage = queryParams.get('itemsPerPage') || '10';
+    history(`?page=${newPage}&itemsPerPage=${currentItemsPerPage}`);
   };
 
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
-    history(`?page=1&itemsPerPage=${newItemsPerPage}`);
+    setShouldThrowError(false);
+    dispatch(setItemsPerPage(newItemsPerPage));
+    const currentPage = queryParams.get('page') || '1';
+    history(`?page=${currentPage}&itemsPerPage=${newItemsPerPage}`);
   };
 
   const openDetailedCard = (result: SearchResult) => {
@@ -104,33 +111,36 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
   useEffect(() => {
     const savedSearchResults = localStorage.getItem('searchResults');
     if (savedSearchResults) {
-      dispatch(setResults(JSON.parse(savedSearchResults))); // Dispatch action to set results in Redux store
+      dispatch(setResults(JSON.parse(savedSearchResults)));
     }
-  }, [dispatch]); // Add dispatch to the dependencies
+  }, [dispatch]);
 
   return (
     <div className="search-results">
       <ErrorBoundary>
-        {shouldThrowError ? (
-          <div>Unknown error on the server. Reload the page</div>
-        ) : isLoading ? (
-          <div>Loading...</div>
-        ) : results.length === 0 ? (
-          <p>No results found</p>
-        ) : (
+        {mainPageLoading && <p>Loading main page...</p>}
+        {detailsPageLoading && <p>Loading details page...</p>}
+        {shouldThrowError && <p>Error occurred while fetching data.</p>}
+        {!shouldThrowError && isLoading ? (
+          <p>Loading...</p>
+        ) : Array.isArray(results) ? (
           results.map((result: SearchResult) => (
             <div key={result.name} onClick={() => openDetailedCard(result)}>
               <Card name={result.name} birthYear={result.birth_year} />
             </div>
           ))
+        ) : (
+          <p>No results found.</p>
         )}
-        <Pagination
-          page={currentPage}
-          resultsCount={results.length}
-          itemsPerPage={itemsPerPage}
-          onPageChange={handlePageChange}
-          onItemsPerPageChange={handleItemsPerPageChange}
-        />
+        {!shouldThrowError && (
+          <Pagination
+            page={currentPage}
+            resultsCount={(results || []).length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
+        )}
       </ErrorBoundary>
       <DetailedCard
         isOpen={detailedCardOpen}

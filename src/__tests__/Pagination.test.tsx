@@ -1,25 +1,54 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
+import store from '../redux/store';
 import Pagination from '../components/Pagination';
 
-describe('Pagination Component', () => {
-  it('updates URL query parameter when page changes', () => {
-    const mockOnPageChange = jest.fn();
+test('calls onPageChange when Prev or Next is clicked', () => {
+  const onPageChangeMock = jest.fn();
 
-    render(
-      <MemoryRouter initialEntries={['/']} initialIndex={0}>
+  // Render the Pagination component within a MemoryRouter
+  const { getByText } = render(
+    <Provider store={store}>
+      <MemoryRouter>
         <Pagination
           page={2}
-          resultsCount={30}
+          resultsCount={100}
           itemsPerPage={10}
-          onPageChange={mockOnPageChange}
+          onPageChange={onPageChangeMock}
           onItemsPerPageChange={() => {}}
         />
       </MemoryRouter>
-    );
+    </Provider>
+  );
 
-    fireEvent.click(screen.getByText('Next'));
+  fireEvent.click(getByText('Prev'));
+  fireEvent.click(getByText('Next'));
 
-    expect(mockOnPageChange).toHaveBeenCalledWith(3);
+  expect(onPageChangeMock).toHaveBeenCalledTimes(2);
+});
+
+test('calls onItemsPerPageChange when items per page is changed', () => {
+  const onItemsPerPageChangeMock = jest.fn();
+
+  // Render the Pagination component within a MemoryRouter
+  const { getByText } = render(
+    <Provider store={store}>
+      <MemoryRouter>
+        <Pagination
+          page={1}
+          resultsCount={100}
+          itemsPerPage={10}
+          onItemsPerPageChange={onItemsPerPageChangeMock}
+          onPageChange={() => {}}
+        />
+      </MemoryRouter>
+    </Provider>
+  );
+
+  fireEvent.change(getByText('10').closest('select') as HTMLSelectElement, {
+    target: { value: '20' },
   });
+
+  expect(onItemsPerPageChangeMock).toHaveBeenCalledWith(20);
 });

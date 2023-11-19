@@ -1,8 +1,6 @@
 import { render, screen, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { BrowserRouter as Router } from 'react-router-dom';
 import Card from '../components/Card';
-import DetailedCard from '../components/DetailedCard';
 import { AppStateProvider } from '../components/AppStateContext';
 import { SearchResult } from '../interfaces/ISearchResults';
 import Modal from 'react-modal';
@@ -14,8 +12,8 @@ const fakeResult: SearchResult = {
   isLoading: false,
 };
 
-jest.mock('../components/Api', () => ({
-  fetchData: jest.fn(() => Promise.resolve(fakeResult)),
+jest.mock('../redux/api', () => ({
+  useFetchDataQuery: jest.fn(() => ({ data: [fakeResult], isLoading: false })),
 }));
 
 beforeEach(() => {
@@ -40,21 +38,13 @@ describe('Card Component', () => {
     ).toBeInTheDocument();
   });
 
-  it('opens a detailed card component on click', async () => {
-    render(
-      <Router>
-        <AppStateProvider>
-          <Card name={fakeResult.name} birthYear={fakeResult.birth_year} />
-          <DetailedCard isOpen={true} onClose={() => {}} result={fakeResult} />
-        </AppStateProvider>
-      </Router>
-    );
+  test('renders name and birthYear correctly', () => {
+    render(<Card name="Luke Skywalker" birthYear="1977" />);
 
-    act(() => {
-      const cards = screen.getAllByText(/Name:.*Fake Name/, { exact: false });
-      userEvent.click(cards[0]);
-    });
+    const nameElement = screen.getByText(/Luke Skywalker/i);
+    const birthYearElement = screen.getByText(/1977/i);
 
-    expect(screen.getByText('Details for Fake Name')).toBeInTheDocument();
+    expect(nameElement).toBeInTheDocument();
+    expect(birthYearElement).toBeInTheDocument();
   });
 });

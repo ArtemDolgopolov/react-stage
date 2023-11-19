@@ -31,4 +31,5 @@ const appSlice = createSlice({
 
 export const { setSearchTerm, setResults, setShouldThrowError } =
   appSlice.actions;
+
 export default appSlice.reducer;
