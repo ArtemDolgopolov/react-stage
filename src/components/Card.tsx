@@ -1,9 +1,4 @@
-import React from 'react';
-
-const Card: React.FC<{ name: string; birthYear: string }> = ({
-  name,
-  birthYear,
-}) => {
+const Card: React.FC<{ name: string; birthYear: string }> = ({ name, birthYear }) => {
   return (
     <div className="result">
       <p>Name: {name}</p>

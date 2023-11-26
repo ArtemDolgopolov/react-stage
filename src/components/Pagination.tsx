@@ -1,6 +1,7 @@
+import Link from 'next/link';
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+
 import { setItemsPerPage } from '../redux/searchSlice';
 
 const Pagination = ({
@@ -13,30 +14,27 @@ const Pagination = ({
   page: number;
   resultsCount: number;
   itemsPerPage: number;
-  onPageChange: (newPage: number, newItemsPerPage: number) => void;
+  onPageChange: (newPage: number) => void;
   onItemsPerPageChange: (newItemsPerPage: number) => void;
 }) => {
   const dispatch = useDispatch();
   const availableItemsPerPage = [10, 20, 30];
-  const canGoToNextPage = resultsCount >= itemsPerPage;
+  const canGoToNextPage = resultsCount > itemsPerPage;
 
-  const handleItemsPerPageChange = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => {
+  const handleItemsPerPageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newItemsPerPage = Number(event.target.value);
     onItemsPerPageChange(newItemsPerPage);
     dispatch(setItemsPerPage(newItemsPerPage));
+    onPageChange(1);
   };
 
   return (
     <div className="pagination">
       {page > 1 && (
-        <Link
-          to={`?page=${page - 1}&itemsPerPage=${itemsPerPage}`}
-          className="prev"
-          onClick={() => onPageChange(page - 1, itemsPerPage)}
-        >
-          Prev
+        <Link href={`?page=${page - 1}`} passHref>
+          <a className="prev" onClick={() => onPageChange(page - 1)}>
+            Prev
+          </a>
         </Link>
       )}
       <span className="current-page">{page}</span>
@@ -48,12 +46,10 @@ const Pagination = ({
         ))}
       </select>
       {canGoToNextPage && (
-        <Link
-          to={`?page=${page + 1}&itemsPerPage=${itemsPerPage}`}
-          className="next"
-          onClick={() => onPageChange(page + 1, itemsPerPage)}
-        >
-          Next
+        <Link href={`?page=${page + 1}`} passHref>
+          <a className="next" onClick={() => onPageChange(page + 1)}>
+            Next
+          </a>
         </Link>
       )}
     </div>

@@ -1,51 +1,30 @@
-import React, { useEffect } from 'react';
-import { SearchProps } from '../interfaces/ISearchResults';
-import '../App.css';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  setSearchTerm,
-  setResults,
-  setMainPageLoading,
-} from '../redux/searchSlice';
-import { RootState } from '../redux/store';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 
-const Search: React.FC<SearchProps> = ({ onSearch }) => {
+import { setSearchTerm } from '../redux/searchSlice';
+
+interface SearchProps {
+  onSearchSubmit: (searchTerm: string) => void;
+}
+
+const Search: React.FC<SearchProps> = ({ onSearchSubmit }) => {
   const dispatch = useDispatch();
-  const searchTerm = useSelector((state: RootState) => state.search.searchTerm);
+  const [searchTerm, setSearchTermLocal] = useState('');
 
-  useEffect(() => {
-    const savedSearchTerm = localStorage.getItem('searchTerm');
-    if (savedSearchTerm) {
-      dispatch(setSearchTerm(savedSearchTerm));
-    }
-  }, [dispatch]);
-
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newSearchTerm = event.target.value;
-    dispatch(setSearchTerm(newSearchTerm));
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTermLocal(e.target.value);
   };
 
   const handleSearchSubmit = () => {
-    if (searchTerm.trim() !== '') {
-      dispatch(setMainPageLoading(true));
-      onSearch(searchTerm.trim());
-      dispatch(setResults([]));
-      localStorage.setItem('searchTerm', searchTerm.trim());
-    }
+    dispatch(setSearchTerm(searchTerm));
+    onSearchSubmit(searchTerm);
   };
 
   return (
-    <header className="search">
-      <input
-        type="text"
-        value={searchTerm}
-        onChange={handleSearchChange}
-        placeholder="Search..."
-      />
-      <button type="button" onClick={handleSearchSubmit}>
-        Search persons
-      </button>
-    </header>
+    <div className="search-container">
+      <input type="text" value={searchTerm} onChange={handleSearchChange} />
+      <button onClick={handleSearchSubmit}>Search Persons</button>
+    </div>
   );
 };
 

@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import Modal from 'react-modal';
+import { useDispatch } from 'react-redux';
+
 import { SearchResult } from '../interfaces/ISearchResults';
 import { setResults } from '../redux/appSlice';
-import { useDispatch } from 'react-redux';
 
 interface DetailedCardProps {
   isOpen: boolean;
@@ -10,11 +11,7 @@ interface DetailedCardProps {
   result: SearchResult | null;
 }
 
-const DetailedCard: React.FC<DetailedCardProps> = ({
-  isOpen,
-  onClose,
-  result,
-}) => {
+const DetailedCard: React.FC<DetailedCardProps> = ({ isOpen, onClose, result }) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -23,24 +20,24 @@ const DetailedCard: React.FC<DetailedCardProps> = ({
     };
   }, [dispatch]);
 
-  const closeDetailedCard = () => {
+  const closeModal = () => {
     onClose();
   };
 
   return (
     <Modal
       isOpen={isOpen}
-      onRequestClose={closeDetailedCard}
+      onRequestClose={closeModal}
       contentLabel="Detailed Card Modal"
+      shouldCloseOnOverlayClick={true}
     >
       <div>
-        {result?.isLoading && <div>Loading...</div>}
-        {!result?.isLoading && (
+        {result && (
           <>
-            <h2>Details for {result?.name}</h2>
-            <p>Name: {result?.name}</p>
-            <p>Date of birth: {result?.birth_year}</p>
-            <button onClick={closeDetailedCard}>Close</button>
+            <h2>Details for {result.name}</h2>
+            <p>Name: {result.name}</p>
+            <p>Date of birth: {result.birth_year}</p>
+            <button onClick={closeModal}>Close</button>
           </>
         )}
       </div>

@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { PayloadAction, createSlice } from '@reduxjs/toolkit';
+
 import { SearchResult } from '../interfaces/ISearchResults';
 
 interface AppState {
@@ -29,7 +30,6 @@ const appSlice = createSlice({
   },
 });
 
-export const { setSearchTerm, setResults, setShouldThrowError } =
-  appSlice.actions;
+export const { setSearchTerm, setResults, setShouldThrowError } = appSlice.actions;
 
 export default appSlice.reducer;

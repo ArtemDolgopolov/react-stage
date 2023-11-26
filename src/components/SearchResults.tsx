@@ -1,104 +1,95 @@
+import { useRouter } from 'next/router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { SearchResult } from '../interfaces/ISearchResults';
-import ErrorBoundary from './ErrorBoundary';
-import { useFetchDataQuery } from '../redux/api';
-import { useLocation, useNavigate } from 'react-router-dom';
-import Card from './Card';
-import { RootState } from '../redux/store';
-import '../App.css';
-import Pagination from './Pagination';
-import DetailedCard from './DetailedCard';
 import { useDispatch, useSelector } from 'react-redux';
+
+import { SearchResult } from '../interfaces/ISearchResults';
+import { useFetchDataQuery } from '../pages/api/api';
 import {
-  setResults,
+  setDetailsPageLoading,
   setItemsPerPage,
   setMainPageLoading,
-  setDetailsPageLoading,
+  setResults,
+  setSearchTerm,
 } from '../redux/searchSlice';
+import { RootState } from '../redux/store';
+import Card from './Card';
+import DetailedCard from './DetailedCard';
+import Pagination from './Pagination';
 
-const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
+interface SearchResultsProps {
+  searchTerm: string;
+  onSearchSubmit: (searchTerm: string) => void;
+}
+
+const SearchResults: React.FC<SearchResultsProps> = ({ searchTerm, onSearchSubmit }) => {
   const dispatch = useDispatch();
-  const itemsPerPage = useSelector(
-    (state: RootState) => state.search.itemsPerPage
-  );
-  const mainPageLoading = useSelector(
-    (state: RootState) => state.search.mainPageLoading
-  );
-  const detailsPageLoading = useSelector(
-    (state: RootState) => state.search.detailsPageLoading
-  );
+  const itemsPerPage = useSelector((state: RootState) => state.search.itemsPerPage);
+  const mainPageLoading = useSelector((state: RootState) => state.search.mainPageLoading);
+  const detailsPageLoading = useSelector((state: RootState) => state.search.detailsPageLoading);
 
-  const location = useLocation();
-  const queryParams = useMemo(
-    () => new URLSearchParams(location.search),
-    [location.search]
-  );
+  const router = useRouter();
+  const queryParams = useMemo(() => {
+    const searchParam = router.query.search;
+    const searchParams =
+      typeof searchParam === 'string' ? new URLSearchParams(searchParam) : new URLSearchParams();
+    return searchParams;
+  }, [router.query.search]);
 
   const [shouldThrowError, setShouldThrowError] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(
-    null
-  );
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [detailedCardOpen, setDetailedCardOpen] = useState(false);
 
-  const history = useNavigate();
-
-  const { data: results, isLoading } = useFetchDataQuery({
+  const {
+    data: results,
+    error,
+    isLoading,
+  } = useFetchDataQuery({
     searchTerm,
     page: currentPage,
   });
 
   useEffect(() => {
-    const fetchAndStoreData = async (page: number) => {
-      try {
-        if (page === 1) {
-          dispatch(setMainPageLoading(true));
-        } else {
-          dispatch(setDetailsPageLoading(true));
-        }
+    if (results) {
+      dispatch(setResults(results));
+    }
+  }, [results, dispatch]);
 
-        const newResults: SearchResult[] = [];
+  useEffect(() => {
+    setCurrentPage(Number(queryParams.get('page')) || 1);
+  }, [queryParams]);
 
-        dispatch(setResults(newResults));
-        setCurrentPage(page);
+  useEffect(() => {
+    if (error) {
+      console.error('Error fetching data:', error);
+      setShouldThrowError(true);
+    }
+  }, [error]);
 
-        localStorage.setItem('searchResults', JSON.stringify(newResults));
-      } catch (error) {
-        setShouldThrowError(true);
-      } finally {
-        if (page === 1) {
-          dispatch(setMainPageLoading(false));
-        } else {
-          dispatch(setDetailsPageLoading(false));
-        }
-      }
-    };
+  useEffect(() => {
+    dispatch(setDetailsPageLoading(detailsPageLoading));
+    dispatch(setMainPageLoading(mainPageLoading));
+  }, [detailsPageLoading, mainPageLoading, dispatch]);
 
-    const itemsPerPageFromURL = parseInt(
-      queryParams.get('itemsPerPage') || '10',
-      10
-    );
-    dispatch(setItemsPerPage(itemsPerPageFromURL));
-
-    const page = parseInt(queryParams.get('page') || '1', 10);
-    fetchAndStoreData(page);
-  }, [queryParams, searchTerm, itemsPerPage, dispatch]);
+  useEffect(() => {
+    dispatch(setSearchTerm(searchTerm));
+  }, [searchTerm, dispatch]);
 
   const handlePageChange = (newPage: number) => {
     setShouldThrowError(false);
     const currentItemsPerPage = queryParams.get('itemsPerPage') || '10';
-    history(`?page=${newPage}&itemsPerPage=${currentItemsPerPage}`);
+    router.push(`?search=${searchTerm}&page=${newPage}&itemsPerPage=${currentItemsPerPage}`);
   };
 
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setShouldThrowError(false);
     dispatch(setItemsPerPage(newItemsPerPage));
     const currentPage = queryParams.get('page') || '1';
-    history(`?page=${currentPage}&itemsPerPage=${newItemsPerPage}`);
+    router.push(`?search=${searchTerm}&page=${currentPage}&itemsPerPage=${newItemsPerPage}`);
   };
 
-  const openDetailedCard = (result: SearchResult) => {
+  const handleCardClick = (result: SearchResult) => {
     setSelectedResult(result);
     setDetailedCardOpen(true);
   };
@@ -109,44 +100,37 @@ const SearchResults: React.FC<{ searchTerm: string }> = ({ searchTerm }) => {
   };
 
   useEffect(() => {
-    const savedSearchResults = localStorage.getItem('searchResults');
-    if (savedSearchResults) {
-      dispatch(setResults(JSON.parse(savedSearchResults)));
-    }
-  }, [dispatch]);
+    onSearchSubmit(searchTerm);
+  }, [searchTerm, onSearchSubmit]);
 
   return (
-    <div className="search-results">
-      <ErrorBoundary>
-        {mainPageLoading && <p>Loading main page...</p>}
-        {detailsPageLoading && <p>Loading details page...</p>}
-        {shouldThrowError && <p>Error occurred while fetching data.</p>}
-        {!shouldThrowError && isLoading ? (
-          <p>Loading...</p>
-        ) : Array.isArray(results) ? (
-          results.map((result: SearchResult) => (
-            <div key={result.name} onClick={() => openDetailedCard(result)}>
-              <Card name={result.name} birthYear={result.birth_year} />
-            </div>
-          ))
-        ) : (
-          <p>No results found.</p>
-        )}
-        {!shouldThrowError && (
+    <div className="results-container">
+      {isLoading && <div>Loading...</div>}
+      {!isLoading && !mainPageLoading && !detailsPageLoading && !shouldThrowError && (
+        <>
+          <div className="cards-container">
+            {(results || []).map((result: SearchResult) => (
+              <div key={result.name} onClick={() => handleCardClick(result)}>
+                <Card name={result.name} birthYear={result.birth_year} />
+              </div>
+            ))}
+          </div>
           <Pagination
             page={currentPage}
-            resultsCount={(results || []).length}
+            resultsCount={(results && results.length) || 0}
             itemsPerPage={itemsPerPage}
             onPageChange={handlePageChange}
             onItemsPerPageChange={handleItemsPerPageChange}
           />
-        )}
-      </ErrorBoundary>
-      <DetailedCard
-        isOpen={detailedCardOpen}
-        onClose={closeDetailedCard}
-        result={selectedResult!}
-      />
+        </>
+      )}
+      {detailedCardOpen && selectedResult && (
+        <DetailedCard
+          isOpen={detailedCardOpen}
+          onClose={closeDetailedCard}
+          result={selectedResult}
+        />
+      )}
     </div>
   );
 };
